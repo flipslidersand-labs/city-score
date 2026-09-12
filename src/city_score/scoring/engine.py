@@ -117,11 +117,13 @@ class ScoringEngine:
                 pd.Series(weights[k], index=blended_norm.index).where(present, 0.0),
                 fill_value=0.0,
             )
-        score = weighted / weight_mass.replace(0.0, pd.NA)
+        score = weighted / weight_mass.replace(0.0, float("nan"))
 
         out_cols = [c for c in self.key_cols if c in norm.columns]
         result = norm[out_cols].copy()
         result["score"] = score.round(2)
         result = result.sort_values("score", ascending=False, na_position="last")
-        result["rank"] = range(1, len(result) + 1)
+        result["rank"] = pd.Series(
+            range(1, len(result) + 1), index=result.index
+        ).where(result["score"].notna())
         return result.reset_index(drop=True)
