@@ -8,35 +8,15 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.12"]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-
-      - name: Lint with black
-        run: |
-          black --check src/ tests/ scripts/ || echo "Some files need formatting"
-
-      - name: Run tests
-        run: |
-          pytest tests/ -v --cov=city_score --cov-report=term-missing
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        if: always()
-        with:
-          file: ./coverage.xml
-          fail_ci_if_error: false
+    # Shared org gate (flipslidersand-labs/qa-workflows). Runner is resolved
+    # inside the reusable workflow via vars.GATE_RUNNER.
+    uses: flipslidersand-labs/qa-workflows/.github/workflows/python-test.yml@main
+    with:
+      python-version: "3.12"
+      install-extras: dev
+      test-path: tests/
+      # pyproject addopts already enforce --cov-fail-under=60; keep the same bar.
+      coverage-threshold: 60
+      # Previous CI ran black --check non-blocking (|| echo); ruff is not
+      # configured for this repo yet, so lint stays off for the first rollout.
+      run-lint: false
