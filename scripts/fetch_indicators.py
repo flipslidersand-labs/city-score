@@ -51,7 +51,7 @@ def fetch_indicators(api_key: str, year: int | None = None) -> pd.DataFrame:
         weather_df = weather.fetch(years=[year])
     print(f"    → {len(weather_df)} rows from JMA")
 
-    print(f"  Composing indicators...")
+    print("  Composing indicators...")
     pipeline = NormalizePipeline()
     result_df, missing = pipeline.run(
         estat_df=estat_df,
@@ -65,8 +65,12 @@ def fetch_indicators(api_key: str, year: int | None = None) -> pd.DataFrame:
 
 def main():
     parser = argparse.ArgumentParser(description="指標一括取得")
-    parser.add_argument("--api-key", help="e-Stat API キー（未指定時は環境変数から取得）")
-    parser.add_argument("--year", type=int, default=2020, help="取得対象年度（デフォルト: 2020）")
+    parser.add_argument(
+        "--api-key", help="e-Stat API キー（未指定時は環境変数から取得）"
+    )
+    parser.add_argument(
+        "--year", type=int, default=2020, help="取得対象年度（デフォルト: 2020）"
+    )
     parser.add_argument(
         "--output",
         help="出力 CSV パス（未指定時: data/indicators_YYYYMMDD.csv）",
@@ -82,7 +86,9 @@ def main():
         print("  --api-key で指定するか、環境変数 ESTAT_API_KEY を設定してください")
         sys.exit(1)
 
-    output_path = args.output or f"data/indicators_{datetime.now().strftime('%Y%m%d')}.csv"
+    output_path = (
+        args.output or f"data/indicators_{datetime.now().strftime('%Y%m%d')}.csv"
+    )
 
     if args.dry_run:
         print(f"[DRY-RUN] Would fetch indicators for year={args.year}")

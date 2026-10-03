@@ -11,13 +11,14 @@
 出力:
     config/municipality_station_map_full.json  — 市区町村コード → 地点ID マッピング
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import math
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # 都道府県コード (2桁) → 代表的な緯度経度（市区町村データがない場合のフォールバック用）
@@ -72,6 +73,7 @@ PREFECTURE_CENTROIDS: dict[str, tuple[float, float]] = {
     "47": (26.20, 127.69),  # 沖縄
 }
 
+
 # 実際の市区町村データがない場合に使うスタブ（各都道府県の代表市区町村コード）
 # 市区町村コード 6桁: 都道府県2桁 + 市区町村4桁
 # 実際には総務省が提供する全1,741市区町村のデータを使うこと
@@ -81,7 +83,9 @@ def _generate_stub_municipalities() -> list[dict]:
     for pref_code, (lat, lon) in PREFECTURE_CENTROIDS.items():
         # 各都道府県に最低1つの代表コードを追加
         muni_code = f"{pref_code}0000"
-        stubs.append({"code": muni_code, "lat": lat, "lon": lon, "prefecture": pref_code})
+        stubs.append(
+            {"code": muni_code, "lat": lat, "lon": lon, "prefecture": pref_code}
+        )
     return stubs
 
 
@@ -91,7 +95,10 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     dphi = math.radians(lat2 - lat1)
     dlambda = math.radians(lon2 - lon1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    a = (
+        math.sin(dphi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    )
     return 2 * r * math.asin(math.sqrt(a))
 
 
@@ -162,7 +169,7 @@ def build_mapping(
 
     return {
         "version": "2024-01",
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "total_municipalities": total,
         "coverage_rate": round(coverage_rate, 4),
         "mappings": mappings,
@@ -201,7 +208,9 @@ def main() -> None:
             municipalities = json.load(f)
         print(f"Loaded {len(municipalities)} municipalities from {args.municipalities}")
     else:
-        print("Municipality data not provided, using stub data (47 prefectural representatives)")
+        print(
+            "Municipality data not provided, using stub data (47 prefectural representatives)"
+        )
 
     mapping = build_mapping(args.stations, municipalities)
 

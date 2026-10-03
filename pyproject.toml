@@ -45,3 +45,13 @@ pythonpath = ["src"]
 [tool.black]
 line-length = 88
 target-version = ["py312"]
+
+[tool.ruff.lint]
+# Rules whose fixes would change runtime behavior or are not relevant here
+ignore = [
+    "DTZ005",  # naive datetime.now()
+    "DTZ006",  # naive datetime.fromtimestamp()
+    "DTZ011",  # date.today()
+    "PYI034",  # __enter__ return type
+    "EXE001",  # shebang without executable bit
+]
