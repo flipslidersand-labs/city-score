@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Mapping
+from collections.abc import Mapping
 
 import pandas as pd
 
@@ -81,7 +81,11 @@ class ScoringEngine:
             default_alpha = float(
                 self.config.subjective_blend.get("default_alpha", 0.2)
             )
-            code_col = blended_norm["code"].astype(str) if "code" in blended_norm.columns else None
+            code_col = (
+                blended_norm["code"].astype(str)
+                if "code" in blended_norm.columns
+                else None
+            )
 
             for k in inds:
                 if k not in subjective:
@@ -91,7 +95,7 @@ class ScoringEngine:
 
                 # この指標の alpha を取得
                 if isinstance(alpha, dict):
-                    alpha_k = alpha.get(k, default_alpha if alpha is None else default_alpha)
+                    alpha_k = alpha.get(k, default_alpha)
                 else:
                     alpha_k = alpha if alpha is not None else default_alpha
 
@@ -102,7 +106,9 @@ class ScoringEngine:
                 for code, subj_val in subj_map.items():
                     mask = code_col == str(code)
                     if mask.any():
-                        blended_norm.loc[mask, k] = (1 - alpha_k) * obj[mask] + alpha_k * subj_val
+                        blended_norm.loc[mask, k] = (1 - alpha_k) * obj[
+                            mask
+                        ] + alpha_k * subj_val
 
         # 欠損指標は 0 寄与ではなく、その地域の他指標だけで加重平均されるよう扱う
         weighted = pd.Series(0.0, index=blended_norm.index)

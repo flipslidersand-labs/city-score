@@ -4,8 +4,6 @@
 キャッシュパス・ネットワークエラー・STATUS 異常のテストを含む (#20)。
 """
 
-from unittest.mock import MagicMock
-
 import pytest
 import requests
 import responses as responses_lib
@@ -41,6 +39,7 @@ def test_stub_get_data_callable():
 # ------------------------------------------------------------------
 # キャッシュパス (#20)
 # ------------------------------------------------------------------
+
 
 def test_cache_init_creates_db(tmp_path):
     """tmp_path を渡すと SQLite DB が作成されること。"""
@@ -102,6 +101,7 @@ def test_cache_disabled_always_calls_stub(tmp_path):
 # ネットワークエラー (#20)
 # ------------------------------------------------------------------
 
+
 @responses_lib.activate
 def test_network_request_exception_raises_estat_api_error():
     """requests.RequestException が EstatApiError に変換されること。"""
@@ -160,13 +160,12 @@ def test_network_non_json_response_raises_estat_api_error():
 # STATUS 異常 (#20)
 # ------------------------------------------------------------------
 
+
 def test_check_app_status_nonzero_raises():
     """_check_app_status が STATUS!=0 のとき EstatApiError を raise すること。"""
     c = EstatApiClient(api_key="dummy-key", stub=True)
     data = {
-        "GET_STATS_LIST": {
-            "RESULT": {"STATUS": 1, "ERROR_MSG": "不正なパラメータです"}
-        }
+        "GET_STATS_LIST": {"RESULT": {"STATUS": 1, "ERROR_MSG": "不正なパラメータです"}}
     }
     with pytest.raises(EstatApiError, match="STATUS=1"):
         c._check_app_status("getStatsList", data)
@@ -176,11 +175,7 @@ def test_check_app_status_nonzero_raises():
 def test_check_app_status_string_nonzero_raises():
     """STATUS が文字列 '1' の場合も EstatApiError を raise すること。"""
     c = EstatApiClient(api_key="dummy-key", stub=True)
-    data = {
-        "GET_STATS_DATA": {
-            "RESULT": {"STATUS": "1", "ERROR_MSG": "エラー"}
-        }
-    }
+    data = {"GET_STATS_DATA": {"RESULT": {"STATUS": "1", "ERROR_MSG": "エラー"}}}
     with pytest.raises(EstatApiError, match="STATUS=1"):
         c._check_app_status("getStatsData", data)
     c.close()

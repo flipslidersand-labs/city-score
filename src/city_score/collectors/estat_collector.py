@@ -18,7 +18,7 @@ from __future__ import annotations
 import math
 import os
 import weakref
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -301,6 +301,7 @@ class EstatCollector:
             # 産業多様性: code × year でグループ化してシャノン指数を計算
             def _shannon_by_group(grp: pd.DataFrame) -> float:
                 return _shannon_diversity(grp["_raw"].dropna())
+
             df = (
                 df.groupby(["code", "year"])
                 .apply(_shannon_by_group, include_groups=False)
@@ -335,11 +336,18 @@ class EstatCollector:
             result = result.merge(df, on=["code", "year"], how="outer")
 
         # 単独世帯比率の計算（中間列から最終指標へ）
-        if "_single_household_count" in result.columns and "_total_household_count" in result.columns:
+        if (
+            "_single_household_count" in result.columns
+            and "_total_household_count" in result.columns
+        ):
             total = result["_total_household_count"]
             single = result["_single_household_count"]
-            result["single_household_ratio"] = (single / total * 100).where(total > 0, None)
-            result = result.drop(columns=["_single_household_count", "_total_household_count"])
+            result["single_household_ratio"] = (single / total * 100).where(
+                total > 0, None
+            )
+            result = result.drop(
+                columns=["_single_household_count", "_total_household_count"]
+            )
 
         return result.sort_values(["code", "year"]).reset_index(drop=True)
 
@@ -349,7 +357,7 @@ class EstatCollector:
             self._finalizer.detach()
         self._client.close()
 
-    def __enter__(self) -> "EstatCollector":
+    def __enter__(self) -> EstatCollector:
         return self
 
     def __exit__(self, *_: object) -> None:

@@ -12,6 +12,9 @@
 from __future__ import annotations
 
 import os
+
+# パッケージは src/ 配下なので sys.path 調整が必要な場合がある
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -19,14 +22,11 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-# パッケージは src/ 配下なので sys.path 調整が必要な場合がある
-import sys
-
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
-from city_score.scoring.engine import ScoringEngine  # noqa: E402
-from city_score.scoring.profiles import load_weights_config  # noqa: E402
+from city_score.scoring.engine import ScoringEngine
+from city_score.scoring.profiles import load_weights_config
 
 INDICATOR_LABELS = {
     "career_sustainability": "キャリア持続性",
@@ -70,7 +70,9 @@ def _load_data() -> pd.DataFrame:
     df = pd.read_csv(_DATA_PATH, dtype={"code": str})
     muni_path = ROOT / "src" / "city_score" / "data" / "municipalities_sample.csv"
     if muni_path.exists():
-        muni = pd.read_csv(muni_path, dtype={"code": str})[["code", "name", "prefecture"]]
+        muni = pd.read_csv(muni_path, dtype={"code": str})[
+            ["code", "name", "prefecture"]
+        ]
         df = df.merge(muni, on="code", how="left")
     return df
 
@@ -100,10 +102,10 @@ def _radar(rows: list[dict], title: str = "") -> go.Figure:
         )
     fig.update_layout(
         title=title,
-        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+        polar={"radialaxis": {"visible": True, "range": [0, 100]}},
         showlegend=True,
         height=420,
-        margin=dict(t=60, b=20, l=20, r=20),
+        margin={"t": 60, "b": 20, "l": 20, "r": 20},
     )
     return fig
 
@@ -149,7 +151,9 @@ def page_ranking() -> None:
         raw["name"] = row["name"]
         radar_rows.append(raw)
     if radar_rows:
-        st.plotly_chart(_radar(radar_rows, "上位3都市 指標比較"), use_container_width=True)
+        st.plotly_chart(
+            _radar(radar_rows, "上位3都市 指標比較"), use_container_width=True
+        )
 
 
 # ──────────────────────────────────────────────
@@ -161,8 +165,10 @@ def page_individual() -> None:
     if "name" in df.columns and "code" in df.columns:
         df_display = df[["code", "name", "prefecture"]].fillna("")
         df_display["display"] = df_display.apply(
-            lambda r: f"{r['name']}（{r['prefecture']}）" if r['prefecture'] else r['name'],
-            axis=1
+            lambda r: (
+                f"{r['name']}（{r['prefecture']}）" if r["prefecture"] else r["name"]
+            ),
+            axis=1,
         )
         display_list = df_display["display"].tolist()
         code_list = df_display["code"].tolist()
@@ -194,13 +200,18 @@ def page_individual() -> None:
         return
 
     r = row.iloc[0]
-    st.metric("総合スコア", f"{r['score']:.1f}", f"全国 {r['rank']}位 / {len(result)}都市中")
+    st.metric(
+        "総合スコア", f"{r['score']:.1f}", f"全国 {r['rank']}位 / {len(result)}都市中"
+    )
 
     raw = df[df["code"] == str(selected_code)]
     if not raw.empty:
         raw_row = raw.iloc[0].to_dict()
         raw_row["name"] = r.get("name", selected_code)
-        st.plotly_chart(_radar([raw_row], f"{r.get('name', selected_code)} 指標内訳"), use_container_width=True)
+        st.plotly_chart(
+            _radar([raw_row], f"{r.get('name', selected_code)} 指標内訳"),
+            use_container_width=True,
+        )
 
         st.subheader("指標詳細（生値）")
         detail = {
@@ -216,7 +227,9 @@ def page_individual() -> None:
 # ──────────────────────────────────────────────
 def page_recommend() -> None:
     st.header("プロファイル入力 → 最適居住地提案")
-    st.caption("ライフステージ・職種・主観スコアを入力すると、あなたに最適な居住地を提案します。")
+    st.caption(
+        "ライフステージ・職種・主観スコアを入力すると、あなたに最適な居住地を提案します。"
+    )
 
     col1, col2 = st.columns(2)
     life_stage = col1.selectbox(
@@ -233,7 +246,9 @@ def page_recommend() -> None:
     )
 
     with st.expander("主観スコアを追加（任意）"):
-        st.caption("特定の都市に対する主観的な印象（0〜100）を入力すると、最終スコアにブレンドされます。")
+        st.caption(
+            "特定の都市に対する主観的な印象（0〜100）を入力すると、最終スコアにブレンドされます。"
+        )
         subj_code = st.text_input("市区町村コード", value="", placeholder="13101")
         subj_score_val = st.slider("主観スコア", 0, 100, 50, key="subj_score")
         alpha = st.slider("主観ブレンド係数 α", 0.0, 0.5, 0.2, step=0.05)
@@ -275,7 +290,9 @@ def page_recommend() -> None:
         raw["name"] = row["name"]
         radar_rows.append(raw)
     if radar_rows:
-        st.plotly_chart(_radar(radar_rows, "推薦上位3都市 比較"), use_container_width=True)
+        st.plotly_chart(
+            _radar(radar_rows, "推薦上位3都市 比較"), use_container_width=True
+        )
 
 
 # ──────────────────────────────────────────────
