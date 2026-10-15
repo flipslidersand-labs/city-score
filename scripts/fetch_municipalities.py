@@ -21,7 +21,6 @@ import pandas as pd
 # 開発時は src/ ディレクトリを PYTHONPATH に追加
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from city_score.collectors.estat_collector import EstatCollector
 from city_score.data.municipalities import load_municipalities
 
 
@@ -43,7 +42,9 @@ def fetch_municipalities(api_key: str) -> pd.DataFrame:
 
 def main():
     parser = argparse.ArgumentParser(description="全国市区町村マスタ取得")
-    parser.add_argument("--api-key", help="e-Stat API キー（未指定時は環境変数から取得）")
+    parser.add_argument(
+        "--api-key", help="e-Stat API キー（未指定時は環境変数から取得）"
+    )
     parser.add_argument(
         "--output",
         default="data/municipalities_full.csv",
@@ -59,7 +60,7 @@ def main():
         print("  --api-key で指定するか、環境変数 ESTAT_API_KEY を設定してください")
         sys.exit(1)
 
-    print(f"Fetching municipalities from e-Stat API...")
+    print("Fetching municipalities from e-Stat API...")
     df = fetch_municipalities(api_key)
 
     if args.dry_run:

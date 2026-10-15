@@ -2,31 +2,33 @@
 
 from __future__ import annotations
 
-import math
-
 import pandas as pd
 import pytest
 
-from city_score.collectors.weather_collector import JmaClient, WeatherCollector, STATION_MASTER
-from city_score.collectors.estat_collector import EstatCollector, STAT_TABLES, StatTable
+from city_score.collectors.estat_collector import STAT_TABLES, EstatCollector, StatTable
+from city_score.collectors.weather_collector import (
+    STATION_MASTER,
+    JmaClient,
+    WeatherCollector,
+)
 from city_score.processors.normalize import (
     NormalizePipeline,
     composite_indicators,
-    compute_missing_stats,
-    save_sqlite,
 )
-
 
 # ──── #313 WeatherCollector ────────────────────────────────────────────
 
+
 def _stub_weather_df() -> pd.DataFrame:
-    return pd.DataFrame({
-        "year": [2020, 2021],
-        "mean_temp": [12.5, 13.0],
-        "hot_days": [5.0, 7.0],
-        "heavy_snow_days": [20.0, 18.0],
-        "sunshine_hours": [1800.0, 1850.0],
-    })
+    return pd.DataFrame(
+        {
+            "year": [2020, 2021],
+            "mean_temp": [12.5, 13.0],
+            "hot_days": [5.0, 7.0],
+            "heavy_snow_days": [20.0, 18.0],
+            "sunshine_hours": [1800.0, 1850.0],
+        }
+    )
 
 
 def test_weather_collector_stub_returns_data(tmp_path):
@@ -58,11 +60,13 @@ def test_weather_collector_missing_station_skipped(tmp_path):
 
 def test_weather_collector_cache(tmp_path):
     client = JmaClient(stub=True)
-    prec, block, code = STATION_MASTER[0][:3]
+    prec, block, _code = STATION_MASTER[0][:3]
     client.register_stub(prec, block, _stub_weather_df())
 
     cache = tmp_path / "weather.db"
-    collector = WeatherCollector(client=client, cache_path=cache, stations=[STATION_MASTER[0]])
+    collector = WeatherCollector(
+        client=client, cache_path=cache, stations=[STATION_MASTER[0]]
+    )
     df1 = collector.fetch(years=[2020, 2021])
     assert cache.exists()
     # 2回目はキャッシュから取得
@@ -102,23 +106,20 @@ def test_weather_collector_cache_two_stations_preserved(tmp_path):
     ) as collector2:
         cached_df = collector2.fetch(years=[2020, 2021])
 
-    assert code0 in cached_df["code"].values, "code0 lost from cache after two-station write"
-    assert code1 in cached_df["code"].values, "code1 lost from cache after two-station write"
+    assert (
+        code0 in cached_df["code"].values
+    ), "code0 lost from cache after two-station write"
+    assert (
+        code1 in cached_df["code"].values
+    ), "code1 lost from cache after two-station write"
     assert len(cached_df) == 4, f"expected 4 cached rows, got {len(cached_df)}"
 
 
 # ──── #314 EstatCollector ──────────────────────────────────────────────
 
+
 def _stub_estat_response(values: list[dict]) -> dict:
-    return {
-        "GET_STATS_DATA": {
-            "STATISTICAL_DATA": {
-                "DATA_INF": {
-                    "VALUE": values
-                }
-            }
-        }
-    }
+    return {"GET_STATS_DATA": {"STATISTICAL_DATA": {"DATA_INF": {"VALUE": values}}}}
 
 
 def test_estat_collector_stub_fetch_table():
@@ -140,6 +141,7 @@ def test_estat_collector_stub_fetch_table():
 
 def test_estat_collector_missing_key_raises():
     import os
+
     env_backup = os.environ.pop("ESTAT_API_KEY", None)
     try:
         with pytest.raises(ValueError, match="API key"):
@@ -172,33 +174,36 @@ def test_estat_collector_shannon_transform():
 
 # ──── #315 NormalizePipeline ───────────────────────────────────────────
 
+
 def _sample_estat() -> pd.DataFrame:
-    return pd.DataFrame({
-        "code": ["01100", "13101", "47201"],
-        "year": [2020, 2020, 2020],
-        "elderly_employment_rate": [25.3, 18.7, 28.1],
-        "industry_employment_raw": [2.1, 2.8, 1.9],
-        "net_migration_raw": [500.0, 12000.0, -200.0],
-        "foreign_resident_raw": [0.5, 3.2, 0.8],
-    })
+    return pd.DataFrame(
+        {
+            "code": ["01100", "13101", "47201"],
+            "year": [2020, 2020, 2020],
+            "elderly_employment_rate": [25.3, 18.7, 28.1],
+            "industry_employment_raw": [2.1, 2.8, 1.9],
+            "net_migration_raw": [500.0, 12000.0, -200.0],
+            "foreign_resident_raw": [0.5, 3.2, 0.8],
+        }
+    )
 
 
 def _sample_weather() -> pd.DataFrame:
-    return pd.DataFrame({
-        "code": ["01100", "13101", "47201"],
-        "year": [2020, 2020, 2020],
-        "mean_temp": [8.9, 15.4, 23.1],
-        "hot_days": [0.0, 10.0, 45.0],
-        "heavy_snow_days": [60.0, 0.0, 0.0],
-        "sunshine_hours": [1700.0, 1900.0, 2100.0],
-    })
+    return pd.DataFrame(
+        {
+            "code": ["01100", "13101", "47201"],
+            "year": [2020, 2020, 2020],
+            "mean_temp": [8.9, 15.4, 23.1],
+            "hot_days": [0.0, 10.0, 45.0],
+            "heavy_snow_days": [60.0, 0.0, 0.0],
+            "sunshine_hours": [1700.0, 1900.0, 2100.0],
+        }
+    )
 
 
 def test_pipeline_run_basic():
     pipeline = NormalizePipeline()
-    df, missing = pipeline.run(
-        estat_df=_sample_estat(), weather_df=_sample_weather()
-    )
+    df, missing = pipeline.run(estat_df=_sample_estat(), weather_df=_sample_weather())
     assert set(df.columns) >= {"code", "year", "climate_comfort"}
     assert len(df) == 3
     assert missing.total_rows == 3
@@ -214,13 +219,14 @@ def test_pipeline_climate_comfort_range():
 def test_pipeline_output_sqlite(tmp_path):
     pipeline = NormalizePipeline()
     db = tmp_path / "out.db"
-    df, _ = pipeline.run(
+    _df, _ = pipeline.run(
         estat_df=_sample_estat(),
         weather_df=_sample_weather(),
         output_sqlite=db,
     )
     assert db.exists()
     import sqlite3
+
     conn = sqlite3.connect(db)
     rows = conn.execute("SELECT count(*) FROM indicators").fetchone()[0]
     conn.close()
@@ -230,31 +236,31 @@ def test_pipeline_output_sqlite(tmp_path):
 def test_pipeline_missing_stats_recorded():
     # life_cost_efficiency は housing_cost_raw がないので NaN になる
     pipeline = NormalizePipeline()
-    _, missing = pipeline.run(
-        estat_df=_sample_estat(), weather_df=_sample_weather()
-    )
+    _, missing = pipeline.run(estat_df=_sample_estat(), weather_df=_sample_weather())
     assert "life_cost_efficiency" in missing.per_column
     assert missing.per_column["life_cost_efficiency"] == 1.0  # 全欠損
 
 
 def test_pipeline_empty_inputs():
     pipeline = NormalizePipeline()
-    df, missing = pipeline.run()
+    df, _missing = pipeline.run()
     assert df.empty
 
 
 # ──── #9 life_cost_efficiency ゼロ除算・inf 伝播回帰テスト ──────────────
 
+
 def test_life_cost_efficiency_negative_housing_cost_no_error():
     """housing_cost_raw が負値でも ZeroDivisionError / inf が発生しないこと (#9)."""
     import numpy as np
-    from city_score.processors.normalize import composite_indicators
 
-    merged = pd.DataFrame({
-        "code": ["01100", "13101", "47201"],
-        "year": [2020, 2020, 2020],
-        "housing_cost_raw": [-1.0, -0.5, 0.0],  # 除数が 0 以下になるケース
-    })
+    merged = pd.DataFrame(
+        {
+            "code": ["01100", "13101", "47201"],
+            "year": [2020, 2020, 2020],
+            "housing_cost_raw": [-1.0, -0.5, 0.0],  # 除数が 0 以下になるケース
+        }
+    )
     out = composite_indicators(merged)
     lce = out["life_cost_efficiency"]
 
@@ -266,40 +272,46 @@ def test_life_cost_efficiency_negative_housing_cost_no_error():
 
 def test_life_cost_efficiency_positive_housing_cost():
     """housing_cost_raw が正値のとき life_cost_efficiency が正しい逆数になること (#9)."""
-    from city_score.processors.normalize import composite_indicators
 
-    merged = pd.DataFrame({
-        "code": ["13101"],
-        "year": [2020],
-        "housing_cost_raw": [4.0],  # denom=5.0 → 1/5=0.2
-    })
+    merged = pd.DataFrame(
+        {
+            "code": ["13101"],
+            "year": [2020],
+            "housing_cost_raw": [4.0],  # denom=5.0 → 1/5=0.2
+        }
+    )
     out = composite_indicators(merged)
     assert abs(out["life_cost_efficiency"].iloc[0] - 0.2) < 1e-9
 
 
 # ──── #12 e-Stat 年度形式 coerce → dropna 脱落回帰テスト ─────────────
 
+
 def test_pipeline_estat_cy_year_format_not_dropped():
     """e-Stat 年度形式 '2020CY00' を含む estat_df でも都市が dropna で脱落しないこと (#12)."""
-    estat_df = pd.DataFrame({
-        "code": ["01100", "13101"],
-        "year": ["2020CY00", "2021CY00"],  # e-Stat 実際の年度形式
-        "elderly_employment_rate": [25.3, 18.7],
-    })
+    estat_df = pd.DataFrame(
+        {
+            "code": ["01100", "13101"],
+            "year": ["2020CY00", "2021CY00"],  # e-Stat 実際の年度形式
+            "elderly_employment_rate": [25.3, 18.7],
+        }
+    )
     pipeline = NormalizePipeline()
-    df, missing = pipeline.run(estat_df=estat_df)
+    df, _missing = pipeline.run(estat_df=estat_df)
     assert len(df) == 2, f"都市が dropna で脱落した: {len(df)} 行しかない"
     assert set(df["year"]) == {2020, 2021}
 
 
 def test_pipeline_estat_mixed_year_format():
     """整数年度と文字列年度が混在しても両行が保持されること (#12)."""
-    estat_df = pd.DataFrame({
-        "code": ["01100", "13101", "47201"],
-        "year": [2020, "2021CY00", "2022"],
-        "elderly_employment_rate": [25.3, 18.7, 30.0],
-    })
+    estat_df = pd.DataFrame(
+        {
+            "code": ["01100", "13101", "47201"],
+            "year": [2020, "2021CY00", "2022"],
+            "elderly_employment_rate": [25.3, 18.7, 30.0],
+        }
+    )
     pipeline = NormalizePipeline()
-    df, missing = pipeline.run(estat_df=estat_df)
+    df, _missing = pipeline.run(estat_df=estat_df)
     assert len(df) == 3, f"行が脱落した: {len(df)} 行"
     assert set(df["year"]) == {2020, 2021, 2022}

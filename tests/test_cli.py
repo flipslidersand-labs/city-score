@@ -17,7 +17,17 @@ def test_ranking_table(capsys):
 
 
 def test_ranking_markdown(capsys):
-    rc = main(["ranking", "--life-stage", "family_raising", "--format", "markdown", "--top", "3"])
+    rc = main(
+        [
+            "ranking",
+            "--life-stage",
+            "family_raising",
+            "--format",
+            "markdown",
+            "--top",
+            "3",
+        ]
+    )
     assert rc == 0
     out = capsys.readouterr().out
     assert "| rank |" in out
@@ -25,7 +35,17 @@ def test_ranking_markdown(capsys):
 
 
 def test_ranking_with_occupation(capsys):
-    rc = main(["ranking", "--life-stage", "single_active", "--occupation", "software_engineer", "--top", "5"])
+    rc = main(
+        [
+            "ranking",
+            "--life-stage",
+            "single_active",
+            "--occupation",
+            "software_engineer",
+            "--top",
+            "5",
+        ]
+    )
     assert rc == 0
     out = capsys.readouterr().out
     assert "score" in out
@@ -53,13 +73,22 @@ def test_profiles_no_stage(capsys):
 
 
 def test_profiles_with_stage(capsys):
-    rc = main(["profiles", "--life-stage", "pre_retirement", "--occupation", "healthcare_worker"])
+    rc = main(
+        [
+            "profiles",
+            "--life-stage",
+            "pre_retirement",
+            "--occupation",
+            "healthcare_worker",
+        ]
+    )
     assert rc == 0
     out = capsys.readouterr().out
     assert "実効重み" in out
 
 
 # --- バリデーションテスト (#11) ---
+
 
 def test_score_invalid_code_format(capsys):
     """--code が 5 桁数字でない場合は SystemExit(2) になること。"""
@@ -105,10 +134,18 @@ def test_profiles_invalid_life_stage(capsys):
 
 # --- #14: ファイル存在チェック・例外ハンドリング ---
 
+
 def test_missing_indicators_file_returns_exit2(capsys):
     """存在しない --indicators ファイルを指定すると rc=2 でエラーメッセージを出す。"""
-    rc = main(["--indicators", "/nonexistent/path.csv",
-               "ranking", "--life-stage", "single_active"])
+    rc = main(
+        [
+            "--indicators",
+            "/nonexistent/path.csv",
+            "ranking",
+            "--life-stage",
+            "single_active",
+        ]
+    )
     assert rc == 2
     err = capsys.readouterr().err
     assert "エラー" in err
@@ -116,8 +153,15 @@ def test_missing_indicators_file_returns_exit2(capsys):
 
 def test_missing_config_file_returns_exit2(capsys):
     """存在しない --config ファイルを指定すると rc=2 でエラーメッセージを出す。"""
-    rc = main(["--config", "/nonexistent/weights.yaml",
-               "ranking", "--life-stage", "single_active"])
+    rc = main(
+        [
+            "--config",
+            "/nonexistent/weights.yaml",
+            "ranking",
+            "--life-stage",
+            "single_active",
+        ]
+    )
     assert rc == 2
     err = capsys.readouterr().err
     assert "エラー" in err
@@ -125,8 +169,16 @@ def test_missing_config_file_returns_exit2(capsys):
 
 def test_verbose_flag_shows_traceback(capsys):
     """--verbose 指定時は rc=2 かつ stderr にトレースバックが出る。"""
-    rc = main(["--verbose", "--indicators", "/nonexistent/path.csv",
-               "ranking", "--life-stage", "single_active"])
+    rc = main(
+        [
+            "--verbose",
+            "--indicators",
+            "/nonexistent/path.csv",
+            "ranking",
+            "--life-stage",
+            "single_active",
+        ]
+    )
     assert rc == 2
     err = capsys.readouterr().err
     assert "Traceback" in err

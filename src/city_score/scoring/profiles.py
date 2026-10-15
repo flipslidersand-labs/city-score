@@ -16,9 +16,7 @@ from typing import Any
 
 import yaml
 
-DEFAULT_CONFIG = (
-    Path(__file__).resolve().parents[3] / "config" / "weights.sample.yaml"
-)
+DEFAULT_CONFIG = Path(__file__).resolve().parents[3] / "config" / "weights.sample.yaml"
 
 _REQUIRED_KEYS = ("indicators", "base_weights", "occupation_multipliers")
 

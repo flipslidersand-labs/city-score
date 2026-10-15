@@ -25,8 +25,9 @@ import json
 import os
 import sqlite3
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import requests
 
@@ -101,16 +102,14 @@ class EstatApiClient:
     def _init_cache(path: Path) -> sqlite3.Connection:
         path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(str(path))
-        conn.execute(
-            """
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS estat_cache (
                 cache_key TEXT PRIMARY KEY,
                 endpoint  TEXT NOT NULL,
                 payload   TEXT NOT NULL,
                 created_at REAL NOT NULL
             )
-            """
-        )
+            """)
         conn.commit()
         return conn
 
@@ -397,7 +396,7 @@ class EstatApiClient:
             self._cache_conn = None
         self._session.close()
 
-    def __enter__(self) -> "EstatApiClient":
+    def __enter__(self) -> EstatApiClient:
         return self
 
     def __exit__(self, *_exc: object) -> None:
