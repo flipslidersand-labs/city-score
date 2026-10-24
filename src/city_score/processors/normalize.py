@@ -19,11 +19,9 @@ city-score の6指標に合成して Parquet または SQLite に出力する。
 
 from __future__ import annotations
 
-import math
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -141,7 +139,9 @@ def composite_indicators(merged: pd.DataFrame) -> pd.DataFrame:
     if "foreign_resident_raw" in merged.columns:
         components.append(merged["foreign_resident_raw"])
     if components:
-        out["migrant_openness"] = pd.concat(components, axis=1).mean(axis=1, skipna=True)
+        out["migrant_openness"] = pd.concat(components, axis=1).mean(
+            axis=1, skipna=True
+        )
     else:
         out["migrant_openness"] = float("nan")
 
@@ -170,7 +170,9 @@ def save_sqlite(df: pd.DataFrame, path: str | Path, table: str = "indicators") -
     p.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(p) as conn:
         df.to_sql(table, conn, if_exists="replace", index=False)
-        conn.execute(f"CREATE INDEX IF NOT EXISTS idx_code_year ON {table} (code, year)")
+        conn.execute(
+            f"CREATE INDEX IF NOT EXISTS idx_code_year ON {table} (code, year)"
+        )
 
 
 class NormalizePipeline:
@@ -227,9 +229,7 @@ class NormalizePipeline:
         merged["code"] = merged["code"].astype(str).str.zfill(5)
         # e-Stat の年度形式 ('2020CY00' 等) から4桁数字を抽出してから数値変換する (#12)
         merged["year"] = (
-            merged["year"]
-            .astype(str)
-            .str.extract(r"(\d{4})", expand=False)
+            merged["year"].astype(str).str.extract(r"(\d{4})", expand=False)
         )
         merged["year"] = pd.to_numeric(merged["year"], errors="coerce").astype("Int64")
         merged = merged.dropna(subset=["code", "year"])
@@ -258,8 +258,11 @@ def _fill_prefecture_level(df: pd.DataFrame) -> pd.DataFrame:
 
     元の値が存在する場合は上書きしない。
     """
-    numeric_cols = [c for c in df.columns if c not in ("code", "year") and
-                    pd.api.types.is_numeric_dtype(df[c])]
+    numeric_cols = [
+        c
+        for c in df.columns
+        if c not in ("code", "year") and pd.api.types.is_numeric_dtype(df[c])
+    ]
     if not numeric_cols:
         return df
 

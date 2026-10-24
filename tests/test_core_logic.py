@@ -17,40 +17,25 @@ from city_score.collectors.estat_collector import EstatCollector, StatTable
 from city_score.processors.normalize import NormalizePipeline, _fill_prefecture_level
 from city_score.scoring.normalizer import normalize_series
 
-
 # ---------------------------------------------------------------------------
 # ヘルパー
 # ---------------------------------------------------------------------------
 
+
 def _estat_response(values: list[dict]) -> dict:
     """e-Stat getStatsData 形式のスタブ応答を生成する。"""
-    return {
-        "GET_STATS_DATA": {
-            "STATISTICAL_DATA": {
-                "DATA_INF": {
-                    "VALUE": values
-                }
-            }
-        }
-    }
+    return {"GET_STATS_DATA": {"STATISTICAL_DATA": {"DATA_INF": {"VALUE": values}}}}
 
 
 def _meta_response(class_objs) -> dict:
     """e-Stat getMetaInfo 形式のスタブ応答を生成する。"""
-    return {
-        "GET_META_INFO": {
-            "METADATA_INF": {
-                "CLASS_INF": {
-                    "CLASS_OBJ": class_objs
-                }
-            }
-        }
-    }
+    return {"GET_META_INFO": {"METADATA_INF": {"CLASS_INF": {"CLASS_OBJ": class_objs}}}}
 
 
 # ---------------------------------------------------------------------------
 # 1. EstatCollector.fetch_all() — 複数テーブル outer join
 # ---------------------------------------------------------------------------
+
 
 def _make_two_tables() -> tuple[StatTable, StatTable]:
     t1 = StatTable(
@@ -79,16 +64,20 @@ def test_fetch_all_outer_join_preserves_all_codes():
     collector.register_stub(
         "getStatsData",
         lambda params: (
-            _estat_response([
-                {"@area": "01100", "@time": "2020CY00", "$": "25.3"},
-                {"@area": "13101", "@time": "2020CY00", "$": "18.7"},
-            ])
+            _estat_response(
+                [
+                    {"@area": "01100", "@time": "2020CY00", "$": "25.3"},
+                    {"@area": "13101", "@time": "2020CY00", "$": "18.7"},
+                ]
+            )
             if params.get("statsDataId") == "tbl001"
-            else _estat_response([
-                # tbl002: 13101・47201（01100 は欠損）
-                {"@area": "13101", "@time": "2020CY00", "$": "500"},
-                {"@area": "47201", "@time": "2020CY00", "$": "-200"},
-            ])
+            else _estat_response(
+                [
+                    # tbl002: 13101・47201（01100 は欠損）
+                    {"@area": "13101", "@time": "2020CY00", "$": "500"},
+                    {"@area": "47201", "@time": "2020CY00", "$": "-200"},
+                ]
+            )
         ),
     )
 
@@ -161,6 +150,7 @@ def test_fetch_all_empty_tables_returns_code_year():
 # 2. EstatApiClient.list_municipalities()
 # ---------------------------------------------------------------------------
 
+
 def _build_class_obj(classes) -> dict:
     return {"@id": "area", "CLASS": classes}
 
@@ -202,7 +192,12 @@ def test_list_municipalities_class_obj_as_dict_single():
 
 def test_list_municipalities_class_as_dict_single_entry():
     """CLASS が dict 単体（1 エントリのみ）のとき list 化されて処理されること。"""
-    single_class = {"@code": "01100", "@name": "札幌市", "@level": "3", "@parentCode": "01"}
+    single_class = {
+        "@code": "01100",
+        "@name": "札幌市",
+        "@level": "3",
+        "@parentCode": "01",
+    }
     obj = {"@id": "area", "CLASS": single_class}  # CLASS が dict
     client = EstatApiClient(api_key="dummy", stub=True, cache_path=None)
     client.register_stub("getMetaInfo", _meta_response([obj]))
@@ -241,13 +236,16 @@ def test_list_municipalities_empty_class_obj():
 # 3. NormalizePipeline._fill_prefecture_level — fill_pref_level=True
 # ---------------------------------------------------------------------------
 
+
 def test_fill_prefecture_level_fills_missing_with_pref_mean():
     """同一都道府県内の欠損値が都道府県平均で補完されること。"""
-    df = pd.DataFrame({
-        "code": ["01100", "01200", "13101"],
-        "year": [2020, 2020, 2020],
-        "elderly_employment_rate": [25.0, float("nan"), 30.0],
-    })
+    df = pd.DataFrame(
+        {
+            "code": ["01100", "01200", "13101"],
+            "year": [2020, 2020, 2020],
+            "elderly_employment_rate": [25.0, float("nan"), 30.0],
+        }
+    )
     result = _fill_prefecture_level(df)
 
     # 01200 は 01100 と同一都道府県 (01)。01 の平均は 25.0 のみ → 25.0 で補完
@@ -257,25 +255,41 @@ def test_fill_prefecture_level_fills_missing_with_pref_mean():
 
 def test_fill_prefecture_level_does_not_overwrite_existing():
     """元の値が存在する行は上書きされないこと。"""
-    df = pd.DataFrame({
-        "code": ["13101", "13102"],
-        "year": [2020, 2020],
-        "elderly_employment_rate": [18.0, 22.0],
-    })
+    df = pd.DataFrame(
+        {
+            "code": ["13101", "13102"],
+            "year": [2020, 2020],
+            "elderly_employment_rate": [18.0, 22.0],
+        }
+    )
     result = _fill_prefecture_level(df)
 
-    assert abs(result.loc[result["code"] == "13101", "elderly_employment_rate"].iloc[0] - 18.0) < 1e-9
-    assert abs(result.loc[result["code"] == "13102", "elderly_employment_rate"].iloc[0] - 22.0) < 1e-9
+    assert (
+        abs(
+            result.loc[result["code"] == "13101", "elderly_employment_rate"].iloc[0]
+            - 18.0
+        )
+        < 1e-9
+    )
+    assert (
+        abs(
+            result.loc[result["code"] == "13102", "elderly_employment_rate"].iloc[0]
+            - 22.0
+        )
+        < 1e-9
+    )
 
 
 def test_fill_pref_level_via_pipeline_run():
     """NormalizePipeline.run(fill_pref_level=True) が欠損を都道府県平均で補完すること。"""
     # 01100 と同一都道府県(01)に 01200 を追加し、01200 は elderly_employment_rate が欠損
-    estat_df = pd.DataFrame({
-        "code": ["01100", "01200"],
-        "year": [2020, 2020],
-        "elderly_employment_rate": [25.0, float("nan")],
-    })
+    estat_df = pd.DataFrame(
+        {
+            "code": ["01100", "01200"],
+            "year": [2020, 2020],
+            "elderly_employment_rate": [25.0, float("nan")],
+        }
+    )
     pipeline = NormalizePipeline()
     out_df, _ = pipeline.run(estat_df=estat_df, fill_pref_level=True)
 
@@ -287,11 +301,13 @@ def test_fill_pref_level_via_pipeline_run():
 
 def test_fill_pref_level_false_leaves_nan():
     """NormalizePipeline.run(fill_pref_level=False) のとき欠損が補完されないこと。"""
-    estat_df = pd.DataFrame({
-        "code": ["01100", "01200"],
-        "year": [2020, 2020],
-        "elderly_employment_rate": [25.0, float("nan")],
-    })
+    estat_df = pd.DataFrame(
+        {
+            "code": ["01100", "01200"],
+            "year": [2020, 2020],
+            "elderly_employment_rate": [25.0, float("nan")],
+        }
+    )
     pipeline = NormalizePipeline()
     out_df, _ = pipeline.run(estat_df=estat_df, fill_pref_level=False)
 
@@ -302,6 +318,7 @@ def test_fill_pref_level_false_leaves_nan():
 # ---------------------------------------------------------------------------
 # 4. normalize_series(method="zscore") — 値域・std=0・未知メソッド
 # ---------------------------------------------------------------------------
+
 
 def test_zscore_output_within_0_100_by_default():
     """zscore 正規化した結果が clip=(0,100) 内に収まること。"""

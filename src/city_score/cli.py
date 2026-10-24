@@ -63,7 +63,9 @@ def _validate_profile_args(
         )
 
 
-def _load_indicators(path: str | Path | None, parser: argparse.ArgumentParser | None = None) -> pd.DataFrame:
+def _load_indicators(
+    path: str | Path | None, parser: argparse.ArgumentParser | None = None
+) -> pd.DataFrame:
     p = Path(path) if path else DEFAULT_INDICATORS
     if not p.exists():
         msg = f"指標ファイルが見つかりません: {p}"
@@ -80,8 +82,10 @@ def _load_indicators(path: str | Path | None, parser: argparse.ArgumentParser | 
 
 def _to_markdown(df: pd.DataFrame) -> str:
     cols = list(df.columns)
-    lines = ["| " + " | ".join(cols) + " |",
-             "| " + " | ".join("---" for _ in cols) + " |"]
+    lines = [
+        "| " + " | ".join(cols) + " |",
+        "| " + " | ".join("---" for _ in cols) + " |",
+    ]
     for _, row in df.iterrows():
         lines.append("| " + " | ".join(str(row[c]) for c in cols) + " |")
     return "\n".join(lines)
@@ -90,15 +94,15 @@ def _to_markdown(df: pd.DataFrame) -> str:
 def cmd_ranking(args: argparse.Namespace) -> int:
     engine = ScoringEngine(load_weights_config(args.config))
     inds = _load_indicators(args.indicators)
-    result = engine.score(
-        inds, life_stage=args.life_stage, occupation=args.occupation
-    )
+    result = engine.score(inds, life_stage=args.life_stage, occupation=args.occupation)
     top = result.head(args.top)
     view = top[["rank", "name", "prefecture", "score"]]
     if args.format == "markdown":
         print(f"# 居住地ランキング — {args.life_stage} / {args.occupation}\n")
         print(_to_markdown(view))
-        print("\n> データ: 合成サンプル（要検証）。実データは --indicators で差し替え。")
+        print(
+            "\n> データ: 合成サンプル（要検証）。実データは --indicators で差し替え。"
+        )
     else:
         print(view.to_string(index=False))
     return 0
@@ -107,9 +111,7 @@ def cmd_ranking(args: argparse.Namespace) -> int:
 def cmd_score(args: argparse.Namespace) -> int:
     engine = ScoringEngine(load_weights_config(args.config))
     inds = _load_indicators(args.indicators)
-    result = engine.score(
-        inds, life_stage=args.life_stage, occupation=args.occupation
-    )
+    result = engine.score(inds, life_stage=args.life_stage, occupation=args.occupation)
     row = result[result["code"] == str(args.code)] if "code" in result else None
     if row is None or row.empty:
         print(f"見つかりません: code={args.code}")
@@ -143,7 +145,12 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="city-score", description="居住地スコアリング")
     p.add_argument("--config", default=None, help="重み設定 YAML")
     p.add_argument("--indicators", default=None, help="指標データ CSV")
-    p.add_argument("--verbose", "-v", action="store_true", help="エラー時にスタックトレースを表示する")
+    p.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="エラー時にスタックトレースを表示する",
+    )
     sub = p.add_subparsers(dest="command", required=True)
 
     r = sub.add_parser("ranking", help="ランキング出力")

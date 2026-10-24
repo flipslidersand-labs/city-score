@@ -6,8 +6,6 @@ fetch_table() が TOTAL_NUMBER > TO_NUMBER のとき startPosition を進めて
 
 from __future__ import annotations
 
-import pytest
-
 from city_score.collectors.estat_collector import EstatCollector, StatTable
 
 
@@ -49,6 +47,7 @@ def _simple_table(indicator_col: str = "test_col") -> StatTable:
 # 単一ページ（ページング不要）
 # ------------------------------------------------------------------
 
+
 def test_fetch_table_single_page_no_pagination():
     """TOTAL_NUMBER == TO_NUMBER のとき 1 回だけ API を呼ぶこと。"""
     table = _simple_table("test_col")
@@ -81,6 +80,7 @@ def test_fetch_table_single_page_no_pagination():
 # 2 ページ
 # ------------------------------------------------------------------
 
+
 def test_fetch_table_two_pages_collects_all_rows():
     """2 ページにまたがるデータを全件取得すること。"""
     table = _simple_table("test_col")
@@ -111,6 +111,7 @@ def test_fetch_table_two_pages_collects_all_rows():
 # ------------------------------------------------------------------
 # 3 ページ（ページサイズより多い件数）
 # ------------------------------------------------------------------
+
 
 def test_fetch_table_three_pages_collects_all_rows():
     """3 ページにまたがるデータを全件取得すること。"""
@@ -146,6 +147,7 @@ def test_fetch_table_three_pages_collects_all_rows():
 # TABLE_INF が欠落している応答（後方互換）
 # ------------------------------------------------------------------
 
+
 def test_fetch_table_missing_table_inf_returns_single_page():
     """TABLE_INF がない古い形式の応答でもデータを返すこと。"""
     table = _simple_table("test_col")
@@ -159,9 +161,7 @@ def test_fetch_table_missing_table_inf_returns_single_page():
             "GET_STATS_DATA": {
                 "STATISTICAL_DATA": {
                     "DATA_INF": {
-                        "VALUE": [
-                            {"@area": "01100", "@time": "2020CY00", "$": "42"}
-                        ]
+                        "VALUE": [{"@area": "01100", "@time": "2020CY00", "$": "42"}]
                     }
                 }
             }
@@ -180,6 +180,7 @@ def test_fetch_table_missing_table_inf_returns_single_page():
 # ------------------------------------------------------------------
 # TOTAL_NUMBER == 0 のとき無限ループしない
 # ------------------------------------------------------------------
+
 
 def test_fetch_table_total_number_zero_no_infinite_loop():
     """TOTAL_NUMBER=0 のとき 1 回だけ呼んで終了すること。"""
@@ -203,6 +204,7 @@ def test_fetch_table_total_number_zero_no_infinite_loop():
 # ------------------------------------------------------------------
 # startPosition・limit パラメータが API に渡っていること
 # ------------------------------------------------------------------
+
 
 def test_fetch_table_passes_start_position_and_limit():
     """各ページのリクエストに startPosition と limit が含まれること。"""
