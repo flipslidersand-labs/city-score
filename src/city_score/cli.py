@@ -169,8 +169,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    _validate_profile_args(parser, args)
     try:
+        _validate_profile_args(parser, args)
         return args.func(args)
     except (FileNotFoundError, KeyError, ValueError, pd.errors.ParserError) as e:
         sys.stderr.write(f"エラー: {e}\n")
