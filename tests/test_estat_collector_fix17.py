@@ -9,10 +9,10 @@ import pytest
 
 from city_score.collectors.estat_collector import EstatCollector, StatTable
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_collector(tmp_path=None):
     """Return a stub EstatCollector with no tables (minimal overhead)."""
@@ -32,6 +32,7 @@ def _make_table(transform: str) -> StatTable:
 # ---------------------------------------------------------------------------
 # per1000 / per10k transform (#17-1)
 # ---------------------------------------------------------------------------
+
 
 class TestPerTransform:
     """_apply_transform の per1000/per10k 分岐テスト。"""
@@ -109,6 +110,7 @@ class TestPerTransform:
 # ---------------------------------------------------------------------------
 # EstatCollector close / finalizer (#17-2)
 # ---------------------------------------------------------------------------
+
 
 class TestEstatCollectorClose:
     """close() および weakref.finalize によるリークガードのテスト。"""

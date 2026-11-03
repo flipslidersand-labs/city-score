@@ -3,9 +3,9 @@
 import pandas as pd
 import pytest
 
-from city_score.scoring.normalizer import normalize_series, normalize_frame
-from city_score.scoring.profiles import load_weights_config
 from city_score.scoring.engine import ScoringEngine
+from city_score.scoring.normalizer import normalize_frame, normalize_series
+from city_score.scoring.profiles import load_weights_config
 
 INDICATORS = [
     "career_sustainability",
@@ -95,7 +95,9 @@ def test_engine_subjective_blend_moves_score():
         _sample_frame(),
         life_stage="single_active",
         subjective={
-            "career_sustainability": {"01100": 100.0},  # 01100 のキャリア持続性を100に上げる
+            "career_sustainability": {
+                "01100": 100.0
+            },  # 01100 のキャリア持続性を100に上げる
         },
         alpha=0.5,
     )
@@ -113,7 +115,10 @@ def test_engine_missing_indicator_raises():
 
 # --- #15 base_weights validation (fail-fast) ---------------------------
 
-def _make_data(base_weights_override: dict | None = None, occ_override: dict | None = None) -> dict:
+
+def _make_data(
+    base_weights_override: dict | None = None, occ_override: dict | None = None
+) -> dict:
     """テスト用の最小 WeightsConfig データを生成する。"""
     indicators = [
         "career_sustainability",
@@ -124,10 +129,16 @@ def _make_data(base_weights_override: dict | None = None, occ_override: dict | N
         "migrant_openness",
     ]
     full_base = {k: 1.0 for k in indicators}
-    base_weights = {"test_stage": base_weights_override if base_weights_override is not None else full_base}
-    occupation_multipliers = occ_override if occ_override is not None else {
-        "default": {k: 1.0 for k in indicators}
+    base_weights = {
+        "test_stage": (
+            base_weights_override if base_weights_override is not None else full_base
+        )
     }
+    occupation_multipliers = (
+        occ_override
+        if occ_override is not None
+        else {"default": {k: 1.0 for k in indicators}}
+    )
     return {
         "indicators": indicators,
         "base_weights": base_weights,

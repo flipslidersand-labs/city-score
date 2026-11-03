@@ -120,9 +120,11 @@ def load_municipalities(
         ValueError: コード重複・形式不正・空名などの整合性エラー。
     """
     if csv_path is None:
-        with resources.files("city_score.data").joinpath(_SAMPLE_RESOURCE).open(
-            "r", encoding="utf-8"
-        ) as fh:
+        with (
+            resources.files("city_score.data")
+            .joinpath(_SAMPLE_RESOURCE)
+            .open("r", encoding="utf-8") as fh
+        ):
             df = pd.read_csv(fh, dtype={"code": "string"})
     else:
         df = pd.read_csv(csv_path, dtype={"code": "string"})
@@ -136,7 +138,7 @@ def load_municipalities(
 
 
 def build_municipalities_from_estat(
-    client: "EstatApiClient",
+    client: EstatApiClient,
     stats_data_id: str,
     *,
     area_class_id: str = "area",

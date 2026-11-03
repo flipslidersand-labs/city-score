@@ -16,16 +16,13 @@ API キー不要だが、気象庁サーバーへの過度なアクセスは避�
 
 from __future__ import annotations
 
-import csv
-import hashlib
 import io
 import json
 import math
 import sqlite3
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 import pandas as pd
 import requests
@@ -218,7 +215,8 @@ class StationIndex:
         if not municipality_codes:
             return 0.0
         covered = sum(
-            1 for code in municipality_codes
+            1
+            for code in municipality_codes
             if self.get_station_for_municipality(code) is not None
         )
         return covered / len(municipality_codes)
@@ -244,7 +242,11 @@ class StationIndex:
 
         for record in results:
             for key in indicator_keys:
-                val = record.get(key) if isinstance(record, dict) else getattr(record, key, None)
+                val = (
+                    record.get(key)
+                    if isinstance(record, dict)
+                    else getattr(record, key, None)
+                )
                 if val is None or (isinstance(val, float) and math.isnan(val)):
                     missing += 1
 
@@ -257,8 +259,8 @@ class WeatherRecord:
 
     code: str  # 市区町村コード
     year: int
-    mean_temp: float | None = None       # 年平均気温 (℃)
-    hot_days: float | None = None        # 猛暑日数（日最高気温≥35℃の日数）
+    mean_temp: float | None = None  # 年平均気温 (℃)
+    hot_days: float | None = None  # 猛暑日数（日最高気温≥35℃の日数）
     heavy_snow_days: float | None = None  # 豪雪日数（積雪30cm以上の日数）
     sunshine_hours: float | None = None  # 年間日照時間 (h)
 
@@ -311,7 +313,7 @@ class JmaClient:
     def close(self) -> None:
         self._session.close()
 
-    def __enter__(self) -> "JmaClient":
+    def __enter__(self) -> JmaClient:
         return self
 
     def __exit__(self, *_: object) -> None:
@@ -363,7 +365,9 @@ def _parse_jma_html(html: str) -> pd.DataFrame:
         ("sunshine_hours", ["日照時間", "日照_合計"]),
     ]:
         col = _find_col(keywords)
-        result[out_col] = pd.to_numeric(df[col], errors="coerce") if col else float("nan")
+        result[out_col] = (
+            pd.to_numeric(df[col], errors="coerce") if col else float("nan")
+        )
 
     return result.dropna(subset=["year"]).reset_index(drop=True)
 
@@ -394,7 +398,7 @@ class WeatherCollector:
     def close(self) -> None:
         self._client.close()
 
-    def __enter__(self) -> "WeatherCollector":
+    def __enter__(self) -> WeatherCollector:
         return self
 
     def __exit__(self, *_: object) -> None:
@@ -402,15 +406,13 @@ class WeatherCollector:
 
     def _init_cache(self) -> None:
         conn = sqlite3.connect(self._cache_path)
-        conn.execute(
-            """CREATE TABLE IF NOT EXISTS weather (
+        conn.execute("""CREATE TABLE IF NOT EXISTS weather (
                 code TEXT, year INTEGER,
                 mean_temp REAL, hot_days REAL,
                 heavy_snow_days REAL, sunshine_hours REAL,
                 fetched_at TEXT,
                 PRIMARY KEY (code, year)
-            )"""
-        )
+            )""")
         conn.commit()
         conn.close()
 
@@ -428,12 +430,20 @@ class WeatherCollector:
         if not self._cache_path or df.empty:
             return
         import datetime
-        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+        now = datetime.datetime.now(datetime.UTC).isoformat()
         df = df.copy()
         df["code"] = code
         df["fetched_at"] = now
-        cols = ["code", "year", "mean_temp", "hot_days", "heavy_snow_days",
-                "sunshine_hours", "fetched_at"]
+        cols = [
+            "code",
+            "year",
+            "mean_temp",
+            "hot_days",
+            "heavy_snow_days",
+            "sunshine_hours",
+            "fetched_at",
+        ]
         conn = sqlite3.connect(self._cache_path)
         for _, row in df.iterrows():
             conn.execute(
@@ -463,6 +473,7 @@ class WeatherCollector:
         """
         if years is None:
             import datetime
+
             current = datetime.date.today().year
             years = list(range(current - 10, current))
 
@@ -479,6 +490,7 @@ class WeatherCollector:
                 df = self._client.fetch_annual(prec_no, block_no)
             except Exception as exc:  # noqa: BLE001
                 import warnings
+
                 warnings.warn(f"JMA fetch failed for code={code}: {exc}", stacklevel=2)
                 continue
 
@@ -488,10 +500,16 @@ class WeatherCollector:
             df["code"] = code
             df = df[df["year"].isin(years)]
 
-            indicator_cols = ["mean_temp", "hot_days", "heavy_snow_days", "sunshine_hours"]
+            indicator_cols = [
+                "mean_temp",
+                "hot_days",
+                "heavy_snow_days",
+                "sunshine_hours",
+            ]
             missing_rate = df[indicator_cols].isna().mean().mean()
             if missing_rate > max_missing_rate:
                 import warnings
+
                 warnings.warn(
                     f"code={code}: high missing rate {missing_rate:.0%}, skipping",
                     stacklevel=2,
@@ -503,8 +521,14 @@ class WeatherCollector:
 
         if not frames:
             return pd.DataFrame(
-                columns=["code", "year", "mean_temp", "hot_days",
-                         "heavy_snow_days", "sunshine_hours"]
+                columns=[
+                    "code",
+                    "year",
+                    "mean_temp",
+                    "hot_days",
+                    "heavy_snow_days",
+                    "sunshine_hours",
+                ]
             )
 
         return (
