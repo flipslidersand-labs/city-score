@@ -5,11 +5,9 @@
 - compute_missing_rate の動作確認
 - カバレッジ率 >= 95% の確認（全47都道府県に対して）
 """
+
 from __future__ import annotations
 
-import json
-import math
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -123,29 +121,54 @@ class TestComputeMissingRate:
 
     def test_no_missing_data(self):
         records = [
-            {"mean_temp": 15.0, "hot_days": 5.0, "heavy_snow_days": 0.0, "sunshine_hours": 2000.0},
-            {"mean_temp": 16.0, "hot_days": 8.0, "heavy_snow_days": 0.0, "sunshine_hours": 2100.0},
+            {
+                "mean_temp": 15.0,
+                "hot_days": 5.0,
+                "heavy_snow_days": 0.0,
+                "sunshine_hours": 2000.0,
+            },
+            {
+                "mean_temp": 16.0,
+                "hot_days": 8.0,
+                "heavy_snow_days": 0.0,
+                "sunshine_hours": 2100.0,
+            },
         ]
         rate = StationIndex.compute_missing_rate(records)
         assert rate == 0.0
 
     def test_all_missing_data(self):
         records = [
-            {"mean_temp": None, "hot_days": None, "heavy_snow_days": None, "sunshine_hours": None},
+            {
+                "mean_temp": None,
+                "hot_days": None,
+                "heavy_snow_days": None,
+                "sunshine_hours": None,
+            },
         ]
         rate = StationIndex.compute_missing_rate(records)
         assert rate == 1.0
 
     def test_half_missing_data(self):
         records = [
-            {"mean_temp": 15.0, "hot_days": None, "heavy_snow_days": 0.0, "sunshine_hours": None},
+            {
+                "mean_temp": 15.0,
+                "hot_days": None,
+                "heavy_snow_days": 0.0,
+                "sunshine_hours": None,
+            },
         ]
         rate = StationIndex.compute_missing_rate(records)
         assert rate == pytest.approx(0.5)
 
     def test_nan_counts_as_missing(self):
         records = [
-            {"mean_temp": float("nan"), "hot_days": 5.0, "heavy_snow_days": 0.0, "sunshine_hours": 2000.0},
+            {
+                "mean_temp": float("nan"),
+                "hot_days": 5.0,
+                "heavy_snow_days": 0.0,
+                "sunshine_hours": 2000.0,
+            },
         ]
         rate = StationIndex.compute_missing_rate(records)
         assert rate == pytest.approx(0.25)
@@ -157,9 +180,16 @@ class TestComputeMissingRate:
     def test_dataclass_like_objects(self):
         """WeatherRecord のようなデータクラスでも動作すること。"""
         from city_score.collectors.weather_collector import WeatherRecord
+
         records = [
-            WeatherRecord(code="13101", year=2023, mean_temp=15.0, hot_days=None,
-                          heavy_snow_days=0.0, sunshine_hours=2000.0),
+            WeatherRecord(
+                code="13101",
+                year=2023,
+                mean_temp=15.0,
+                hot_days=None,
+                heavy_snow_days=0.0,
+                sunshine_hours=2000.0,
+            ),
         ]
         rate = StationIndex.compute_missing_rate([vars(r) for r in records])
         assert rate == pytest.approx(0.25)
@@ -198,13 +228,17 @@ class TestBuildStationMapScript:
     def test_haversine_km_basic(self):
         """ハーバーサイン距離計算の基本確認。"""
         from scripts.build_station_map import haversine_km  # type: ignore[import]
+
         # 東京 → 大阪 はおよそ 400km
         dist = haversine_km(35.6894, 139.6917, 34.6842, 135.5192)
-        assert 380 < dist < 430, f"Tokyo-Osaka distance {dist:.1f} km out of expected range"
+        assert (
+            380 < dist < 430
+        ), f"Tokyo-Osaka distance {dist:.1f} km out of expected range"
 
     def test_build_mapping_returns_valid_structure(self):
         """build_mapping がスタブデータで正しい構造を返すこと。"""
         from scripts.build_station_map import build_mapping  # type: ignore[import]
+
         result = build_mapping(_CONFIG_DIR / "amedas_stations.json")
         assert "version" in result
         assert "mappings" in result
