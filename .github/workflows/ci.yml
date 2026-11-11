@@ -10,7 +10,7 @@ jobs:
   test:
     # Shared org gate (flipslidersand-labs/qa-workflows). Runner is resolved
     # inside the reusable workflow via vars.GATE_RUNNER.
-    uses: flipslidersand-labs/qa-workflows/.github/workflows/python-test.yml@main
+    uses: flipslidersand-labs/qa-workflows/.github/workflows/python-test.yml@a6914247d1ea1540ddaf8585aeebc1e57f7b5f1d # main
     with:
       python-version: "3.12"
       install-extras: dev
