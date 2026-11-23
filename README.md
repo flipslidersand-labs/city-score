@@ -3,6 +3,8 @@
 
 # city-score
 
+Release type: `library`
+
 A residential scoring engine for Japanese cities — evaluates livability using original metrics such as career sustainability, life-cost efficiency, and elderly employment opportunity.
 
 ---
