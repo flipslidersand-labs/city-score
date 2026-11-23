@@ -148,7 +148,7 @@ class ScoringEngine:
         result = norm[out_cols].copy()
         result["score"] = score.round(2)
         result = result.sort_values("score", ascending=False, na_position="last")
-        result["rank"] = pd.Series(
-            range(1, len(result) + 1), index=result.index
-        ).where(result["score"].notna())
+        result["rank"] = pd.Series(range(1, len(result) + 1), index=result.index).where(
+            result["score"].notna()
+        )
         return result.reset_index(drop=True)
